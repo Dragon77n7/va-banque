@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Va Banque — Gra</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0208;--surface:#140d10;--surface2:#1e141a;--border:#3a2030;--gold:#d4a853;--gold2:#f0c060;--red:#c0392b;--red2:#e74c3c;--green:#27ae60;--green2:#2ecc71;--text:#f0e8d8;--muted:#8a7060;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Crimson Text',Georgia,serif;min-height:100vh;padding:1rem;
+    background-image:radial-gradient(ellipse 60% 50% at 20% 80%,rgba(192,57,43,.08) 0%,transparent 60%),radial-gradient(ellipse 40% 60% at 80% 20%,rgba(212,168,83,.06) 0%,transparent 60%);}
+
+  /* SCOREBOARD */
+  #scoreboard{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;padding:.75rem;background:var(--surface);border:1px solid var(--border);}
+  .score-card{flex:1;min-width:80px;text-align:center;padding:.5rem .3rem;background:var(--surface2);border:1px solid var(--border);border-radius:1px;}
+  .score-name{font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .score-val{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--gold);}
+  .score-card.active{border-color:var(--gold);background:rgba(212,168,83,.08);}
+
+  /* STATUS BAR */
+  #status-bar{text-align:center;padding:.6rem;background:var(--surface);border:1px solid var(--border);margin-bottom:1rem;font-style:italic;color:var(--gold);font-size:1rem;min-height:2.5rem;}
+
+  /* TABLICA */
+  #board{display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin-bottom:1rem;}
+  .kat-header{grid-column:span 1;text-align:center;font-family:'Playfair Display',serif;font-size:.7rem;font-weight:700;color:var(--gold);background:var(--surface);border:1px solid var(--border);padding:.5rem .2rem;letter-spacing:.05em;text-transform:uppercase;}
+  .q-cell{text-align:center;padding:.6rem .2rem;background:var(--surface2);border:1px solid var(--border);cursor:pointer;font-family:'Playfair Display',serif;font-weight:700;font-size:.95rem;color:var(--gold2);transition:all .15s;border-radius:1px;min-height:48px;display:flex;align-items:center;justify-content:center;}
+  .q-cell:hover:not(.used):not(.disabled){background:rgba(212,168,83,.12);border-color:var(--gold);transform:translateY(-1px);}
+  .q-cell.used{color:var(--border);background:var(--surface);cursor:default;border-color:var(--border);}
+  .q-cell.vabanque{color:var(--red2);border-color:rgba(231,76,60,.4);}
+  .q-cell.disabled{cursor:default;}
+
+  /* PYTANIE */
+  #question-box{display:none;background:var(--surface);border:2px solid var(--gold);padding:1.5rem;margin-bottom:1rem;text-align:center;border-radius:1px;}
+  .q-wartosc{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;}
+  .q-haslo{font-family:'Playfair Display',serif;font-size:clamp(1.1rem,3vw,1.5rem);font-weight:700;line-height:1.3;color:var(--text);margin-bottom:1rem;}
+  .timer-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:1rem;}
+  .timer-fill{height:100%;background:linear-gradient(to right,var(--green),var(--gold2),var(--red2));border-radius:3px;transition:width .1s linear;}
+
+  /* BUZZ */
+  #buzz-btn{display:none;width:100%;padding:1.2rem;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;border-radius:2px;font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;cursor:pointer;letter-spacing:.05em;transition:all .15s;margin-bottom:.5rem;}
+  #buzz-btn:hover{filter:brightness(1.15);transform:translateY(-2px);}
+  #buzz-btn:active{transform:translateY(0);}
+  #buzz-btn:disabled{background:var(--border);cursor:not-allowed;transform:none;}
+
+  /* ANSWER */
+  #answer-box{display:none;margin-bottom:.5rem;}
+  #answer-input{width:100%;background:var(--surface2);border:2px solid var(--gold);color:var(--text);font-family:'Crimson Text',serif;font-size:1.2rem;padding:.7rem 1rem;outline:none;border-radius:1px;margin-bottom:.5rem;}
+  #answer-submit{width:100%;padding:.8rem;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border:none;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;cursor:pointer;border-radius:1px;}
+
+  /* RESULT OVERLAY */
+  #result-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;}
+  #result-overlay.show{display:flex;}
+  .result-card{background:var(--surface);border:2px solid var(--border);padding:2rem;text-align:center;max-width:380px;width:90%;border-radius:2px;}
+  .result-icon{font-size:3rem;margin-bottom:.5rem;}
+  .result-title{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;margin-bottom:.5rem;}
+  .result-correct{color:var(--green2);}
+  .result-wrong{color:var(--red2);}
+  .result-answer{color:var(--muted);font-style:italic;font-size:1rem;margin-bottom:.5rem;}
+
+  /* FINAL */
+  #final-box{display:none;background:var(--surface);border:2px solid var(--gold);padding:1.5rem;margin-bottom:1rem;text-align:center;}
+  .final-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--gold);margin-bottom:.5rem;}
+  #bet-input{width:100%;background:var(--surface2);border:2px solid var(--gold);color:var(--text);font-family:'Crimson Text',serif;font-size:1.3rem;padding:.6rem;text-align:center;outline:none;margin-bottom:.5rem;}
+  #bet-submit{width:100%;padding:.75rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);border:none;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;cursor:pointer;}
+
+  /* VABANQUE BET */
+  #vb-bet-box{display:none;background:rgba(192,57,43,.1);border:2px solid var(--red2);padding:1.2rem;margin-bottom:1rem;text-align:center;}
+
+  /* Notifications */
+  #notif{position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:200;pointer-events:none;}
+  .notif-item{background:var(--surface);border:1px solid var(--gold);padding:.6rem 1.2rem;margin-bottom:.4rem;font-family:'Playfair Display',serif;font-weight:700;text-align:center;border-radius:1px;animation:slideDown .3s ease;}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+  .btn-vabanque{background:linear-gradient(135deg,var(--red),var(--gold));color:#fff;border:none;padding:.5rem 1rem;font-family:'Playfair Display',serif;font-weight:700;cursor:pointer;font-size:.9rem;margin-top:.3rem;}
+</style>
+</head>
+<body>
+
+<div id="notif"></div>
+<div id="org-banner" style="display:none;text-align:center;padding:.5rem;background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);margin-bottom:.5rem;font-family:Playfair Display,serif;font-weight:700;color:var(--red2);font-size:.9rem;">
+  🎭 Tryb Organizatora — obserwujesz grę
+</div>
+
+<!-- PANEL ORGANIZATORA -->
+<div id="organizer-panel" style="display:none;background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.3);padding:.75rem;margin-bottom:.75rem;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+    <span style="font-family:Playfair Display,serif;font-weight:700;color:var(--red2);">🎭 Panel Organizatora</span>
+    <button onclick="requestOrgBoard()" style="padding:.3rem .7rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:.8rem;">Pokaż planszę</button>
+  </div>
+  <div id="org-board-content" style="font-size:.85rem;"></div>
+</div>
+
+<!-- PANEL ORGANIZATORA -->
+<div id="organizer-panel" style="display:none;background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.3);padding:.75rem;margin-bottom:.75rem;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+    <span style="font-family:Playfair Display,serif;font-weight:700;color:var(--red2);">🎭 Panel Organizatora</span>
+    <button onclick="requestOrgBoard()" style="padding:.3rem .7rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:.8rem;">Pokaż planszę</button>
+  </div>
+  <div id="org-board-content" style="font-size:.85rem;"></div>
+</div>
+
+<!-- WYNIKI -->
+<div id="scoreboard"></div>
+
+<!-- STATUS -->
+<div id="status-bar">Łączenie...</div>
+
+<!-- TABLICA -->
+<div id="board"></div>
+
+<!-- VA BANQUE BET -->
+<div id="vb-bet-box">
+  <div style="color:var(--red2);font-family:'Playfair Display',serif;font-weight:900;font-size:1.2rem;margin-bottom:.5rem;">🎰 VA BANQUE! Podaj swoją stawkę</div>
+  <div style="color:var(--muted);font-size:.9rem;margin-bottom:.75rem;">Możesz postawić od 0 do <span id="vb-max">?</span> zł</div>
+  <input type="number" id="vb-stake-input" min="0" style="width:100%;background:var(--surface2);border:2px solid var(--red2);color:var(--text);font-size:1.3rem;padding:.6rem;text-align:center;outline:none;margin-bottom:.5rem;">
+  <button onclick="sendVbStake()" style="width:100%;padding:.75rem;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;cursor:pointer;">Zagraj o tę stawkę!</button>
+</div>
+
+<!-- PYTANIE -->
+<div id="question-box">
+  <div class="q-wartosc" id="q-wartosc"></div>
+  <div class="q-haslo" id="q-haslo"></div>
+  <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+  <div id="q-buzzer-info" style="color:var(--muted);font-style:italic;font-size:.9rem;"></div>
+</div>
+
+<!-- BUZZ -->
+<button id="buzz-btn" onclick="buzz()">🔔 ZGŁASZAM SIĘ!</button>
+
+<!-- ANSWER -->
+<div id="answer-box">
+  <div style="color:var(--gold);font-size:.85rem;margin-bottom:.4rem;text-align:center;">Twoja odpowiedź (masz 12 sekund):</div>
+  <input id="answer-input" placeholder="Wpisz odpowiedź..." autocomplete="off" onkeydown="if(event.key==='Enter')submitAnswer()">
+  <button id="answer-submit" onclick="submitAnswer()">Wyślij odpowiedź</button>
+</div>
+
+<!-- FINAL -->
+<div id="final-box">
+  <div class="final-title" id="final-title">FINAL</div>
+  <div id="final-content"></div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div id="result-overlay">
+  <div class="result-card">
+    <div class="result-icon" id="res-icon"></div>
+    <div class="result-title" id="res-title"></div>
+    <div class="result-answer" id="res-answer"></div>
+    <div id="res-scores" style="margin-top:.75rem;font-size:.9rem;color:var(--muted)"></div>
+  </div>
+</div>
+
+<script>
+const vb = JSON.parse(sessionStorage.getItem('vb') || '{}');
+const myId = vb.myId;
+const myRoom = vb.myRoom;
+const isHost = vb.isHost;
+const isOrganizer = vb.isOrganizer || false;
+
+let ws, gameState = { phase:'lobby', players:[], board:[], currentSelector:null, round:1 };
+let timerInterval = null;
+let timerSeconds = 0;
+
+function wsUrl(){ return (location.protocol==='https:'?'wss:':'ws:')+'//'+location.host; }
+
+function connect(){
+  ws = new WebSocket(wsUrl());
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type:'JOIN_ROOM', name:vb.name||'?', roomCode:myRoom, playerId:myId }));
+  };
+  ws.onmessage = e => handle(JSON.parse(e.data));
+  ws.onerror = () => setStatus('Błąd połączenia!');
+}
+
+function handle(msg){
+  switch(msg.type){
+    case 'ROUND_START': onRoundStart(msg); break;
+    case 'QUESTION': onQuestion(msg); break;
+    case 'BUZZED': onBuzzed(msg); break;
+    case 'ANSWER_RESULT': onAnswerResult(msg); break;
+    case 'NO_BUZZ': onNoBuzz(msg); break;
+    case 'NO_BUZZ_REVEAL': onNoBuzzReveal(msg); break;
+    case 'HOST_ROLE_UPDATE': onHostRoleUpdate(msg); break;
+    case 'ORGANIZER_BOARD': onOrganizerBoard(msg); break;
+    case 'ORGANIZER_ACK': notify(msg.msg, 2000); break;
+    case 'NO_BUZZ_REVEAL': onNoBuzzReveal(msg); break;
+    case 'HOST_ROLE_UPDATE': onHostRoleUpdate(msg); break;
+    case 'ORGANIZER_BOARD': onOrganizerBoard(msg); break;
+    case 'ORGANIZER_ACK': notify(msg.msg, 2000); break;
+    case 'VABANQUE_BET_REQUEST': onVbBetRequest(msg); break;
+    case 'VABANQUE_ANNOUNCE': onVbAnnounce(msg); break;
+    case 'VABANQUE_IN_PROGRESS': onVbInProgress(msg); break;
+    case 'ROUND_END': onRoundEnd(msg); break;
+    case 'FINAL_START': onFinalStart(msg); break;
+    case 'FINAL_QUESTION': onFinalQuestion(msg); break;
+    case 'BET_ACCEPTED': notify('Stawka zaakceptowana!'); break;
+    case 'FINAL_ANSWER_ACK': notify('Odpowiedź wysłana!'); break;
+    case 'FINAL_RESULT': onFinalResult(msg); break;
+    case 'REJOIN_OK': setStatus('Wróciłeś do gry!'); break;
+  }
+}
+
+// ── RENDER ──────────────────────────
+function renderScoreboard(players){
+  const el = document.getElementById('scoreboard');
+  el.innerHTML = players.map(p => `
+    <div class="score-card ${p.id === gameState.currentSelector ? 'active' : ''}">
+      <div class="score-name">${p.name}</div>
+      <div class="score-val">${p.score} zł</div>
+    </div>
+  `).join('');
+}
+
+function renderBoard(board, isMyTurn){
+  const el = document.getElementById('board');
+  if(!board || board.length===0){ el.innerHTML=''; return; }
+  // Nagłówki
+  let html = board.map(k => `<div class="kat-header">${k.nazwa}</div>`).join('');
+  // Pytania — 5 rzędów x 5 kategorii
+  for(let i=0; i<5; i++){
+    board.forEach((kat, ki) => {
+      const p = kat.pytania[i];
+      if(!p){ html += '<div class="q-cell used"></div>'; return; }
+      const used = p.uzyte;
+      const vb = p.vabanque;
+      const clickable = isMyTurn && !used && gameState.phase === 'selecting';
+      html += `<div class="q-cell ${used?'used':''} ${vb&&!used?'vabanque':''} ${!clickable?'disabled':''}"
+        ${clickable ? `onclick="selectQuestion(${ki},${i})"` : ''}
+        title="${vb?'VA BANQUE!':''}">
+        ${used ? '—' : (vb ? '🎰' : p.wartosc+'<br><small style="font-size:.6rem">zł</small>')}
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+function setStatus(msg){ document.getElementById('status-bar').textContent = msg; }
+
+function notify(msg, duration=2500){
+  const el = document.getElementById('notif');
+  const item = document.createElement('div');
+  item.className = 'notif-item';
+  item.textContent = msg;
+  el.appendChild(item);
+  setTimeout(() => item.remove(), duration);
+}
+
+function startTimer(seconds, fillId){
+  clearInterval(timerInterval);
+  timerSeconds = seconds;
+  const fill = document.getElementById(fillId);
+  if(!fill) return;
+  fill.style.width = '100%';
+  const step = 100 / (seconds * 10);
+  let pct = 100;
+  timerInterval = setInterval(() => {
+    pct -= step;
+    if(pct <= 0){ pct=0; clearInterval(timerInterval); }
+    fill.style.width = pct + '%';
+  }, 100);
+}
+
+function stopTimer(){ clearInterval(timerInterval); }
+
+function showResult(correct, title, answer, scores, duration=2500){
+  const ov = document.getElementById('result-overlay');
+  document.getElementById('res-icon').textContent = correct ? '✅' : '❌';
+  document.getElementById('res-title').className = 'result-title ' + (correct?'result-correct':'result-wrong');
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-answer').textContent = answer;
+  document.getElementById('res-scores').innerHTML = scores.map(s =>
+    `<div>${s.name}: <strong style="color:${s.change>=0?'var(--green2)':'var(--red2)'}">${s.change>=0?'+':''}${s.change} zł</strong> → ${s.score} zł</div>`
+  ).join('');
+  ov.classList.add('show');
+  setTimeout(() => { ov.classList.remove('show'); }, duration);
+}
+
+// ── EVENTS ──────────────────────────
+function onRoundStart(msg){
+  gameState = { ...gameState, phase:'selecting', board:msg.board, currentSelector:msg.currentSelector, round:msg.round };
+  renderScoreboard(msg.players);
+  const isMyTurn = msg.currentSelector === myId;
+  renderBoard(msg.board, isMyTurn);
+  document.getElementById('question-box').style.display = 'none';
+  document.getElementById('buzz-btn').style.display = 'none';
+  document.getElementById('answer-box').style.display = 'none';
+  document.getElementById('vb-bet-box').style.display = 'none';
+  document.getElementById('final-box').style.display = 'none';
+  if(isMyTurn){
+    setStatus('🎯 Runda ' + msg.round + ' — Twoja kolej! Wybierz pytanie z tablicy.');
+  } else {
+    setStatus('🎯 Runda ' + msg.round + ' — Wybiera: ' + msg.selectorName);
+  }
+}
+
+function selectQuestion(ki, pi){
+  ws.send(JSON.stringify({ type:'SELECT_QUESTION', kategoriaIdx:ki, pytanieIdx:pi }));
+}
+
+function onVbBetRequest(msg){
+  gameState.phase = 'vabanque_bet';
+  document.getElementById('vb-bet-box').style.display = 'block';
+  document.getElementById('vb-max').textContent = '∞ (bez limitu!)';
+  document.getElementById('vb-stake-input').removeAttribute('max');
+  document.getElementById('vb-stake-input').value = '';
+  document.getElementById('vb-stake-input').placeholder = 'Dowolna kwota...';
+  setStatus('🎰 VA BANQUE! Podaj stawkę — bez limitu!');
+}
+
+function onVbAnnounce(msg){
+  if(gameState.currentSelector !== myId){
+    notify('🎰 ' + msg.playerName + ' trafiło VA BANQUE!', 3000);
+    setStatus('🎰 ' + msg.playerName + ' trafiło VA BANQUE! Czekaj...');
+  }
+}
+
+function sendVbStake(){
+  const val = parseInt(document.getElementById('vb-stake-input').value) || 0;
+  ws.send(JSON.stringify({ type:'VABANQUE_STAKE', stawka:val }));
+  document.getElementById('vb-bet-box').style.display = 'none';
+}
+
+function onQuestion(msg){
+  if(isOrganizer) {
+    // Organizator widzi pytanie ale nie może buzzować
+    gameState.phase = 'buzzing';
+    document.getElementById('question-box').style.display = 'block';
+    document.getElementById('q-wartosc').textContent = (msg.vabanque?'🎰 VA BANQUE — ':'')+msg.wartosc+' zł';
+    document.getElementById('q-haslo').textContent = msg.haslo;
+    document.getElementById('q-buzzer-info').textContent = 'Czekanie na zgłoszenie...';
+    document.getElementById('buzz-btn').style.display = 'none';
+    document.getElementById('answer-box').style.display = 'none';
+    startTimer(10,'timer-fill');
+    setStatus('❓ Gracze mogą się zgłaszać...');
+    renderScoreboard(msg.players);
+    renderBoard(msg.board, false);
+    return;
+  }
+  gameState.phase = 'buzzing';
+  gameState.currentQuestion = msg;
+  document.getElementById('question-box').style.display = 'block';
+  document.getElementById('q-wartosc').textContent = (msg.vabanque ? '🎰 VA BANQUE — ' : '') + msg.wartosc + ' zł';
+  document.getElementById('q-haslo').textContent = msg.haslo;
+  document.getElementById('q-buzzer-info').textContent = '10 sekund na zgłoszenie...';
+  document.getElementById('buzz-btn').style.display = 'block';
+  document.getElementById('buzz-btn').disabled = false;
+  document.getElementById('answer-box').style.display = 'none';
+  startTimer(10, 'timer-fill');
+  setStatus('❓ Kto zna odpowiedź? Naciśnij ZGŁASZAM SIĘ!');
+  renderBoard(msg.board, false);
+  renderScoreboard(msg.players);
+}
+
+function buzz(){
+  if(isOrganizer) return;
+  ws.send(JSON.stringify({ type:'BUZZ' }));
+  document.getElementById('buzz-btn').disabled = true;
+  setStatus('Czekam...');
+}
+
+function onBuzzed(msg){
+  stopTimer();
+  document.getElementById('buzz-btn').style.display = 'none';
+  document.getElementById('q-buzzer-info').textContent = msg.playerName + ' się zgłosił!';
+  setStatus('⏱ ' + msg.playerName + ' odpowiada! (12 sekund)');
+  startTimer(12, 'timer-fill');
+  if(msg.playerId === myId){
+    document.getElementById('answer-box').style.display = 'block';
+    document.getElementById('answer-input').value = '';
+    document.getElementById('answer-input').focus();
+  }
+  renderScoreboard(msg.players);
+}
+
+function submitAnswer(){
+  if(isOrganizer) return;
+  const ans = document.getElementById('answer-input').value.trim();
+  if(!ans) return;
+  ws.send(JSON.stringify({ type:'ANSWER', answer:ans }));
+  document.getElementById('answer-box').style.display = 'none';
+  setStatus('Wysłano odpowiedź...');
+}
+
+function onAnswerResult(msg){
+  stopTimer();
+  document.getElementById('question-box').style.display = 'none';
+  document.getElementById('buzz-btn').style.display = 'none';
+  document.getElementById('answer-box').style.display = 'none';
+  gameState.phase = 'selecting';
+  gameState.currentSelector = msg.currentSelector;
+
+  const title = msg.correct ? '✅ Poprawnie!' : (msg.timeout ? '⏰ Czas minął!' : '❌ Błędna odpowiedź!');
+  const answerInfo = msg.correct
+    ? msg.playerName + ' odpowiedział poprawnie!'
+    : 'Prawidłowa odpowiedź: ' + msg.correctAnswer;
+
+  const scores = [{ name: msg.playerName, change: msg.scoreChange, score: msg.players.find(p=>p.name===msg.playerName)?.score || 0 }];
+
+  showResult(msg.correct, title, answerInfo, scores, 2500);
+
+  setTimeout(() => {
+    renderScoreboard(msg.players);
+    renderBoard(msg.board, msg.currentSelector === myId);
+    if(msg.currentSelector === myId){
+      setStatus('🎯 Twoja kolej! Wybierz pytanie.');
+    } else {
+      setStatus('Wybiera: ' + msg.selectorName);
+    }
+  }, 2600);
+}
+
+function onNoBuzz(msg){
+  stopTimer();
+  document.getElementById('question-box').style.display = 'none';
+  document.getElementById('buzz-btn').style.display = 'none';
+  notify('Nikt się nie zgłosił — pytanie przepada!', 2500);
+  gameState.phase = 'selecting';
+  setTimeout(() => {
+    renderScoreboard(msg.players);
+    renderBoard(msg.board, msg.currentSelector === myId);
+    setStatus(msg.currentSelector === myId ? '🎯 Twoja kolej! Wybierz pytanie.' : 'Wybiera: ' + msg.selectorName);
+  }, 2600);
+}
+
+function onRoundEnd(msg){
+  stopTimer();
+  document.getElementById('board').innerHTML = '';
+  document.getElementById('question-box').style.display = 'none';
+  document.getElementById('buzz-btn').style.display = 'none';
+  document.getElementById('answer-box').style.display = 'none';
+  setStatus('⏳ ' + msg.message);
+  renderScoreboard(msg.players);
+}
+
+// ── FINAL ────────────────────────────
+function onFinalStart(msg){
+  gameState.phase = 'final_betting';
+  document.getElementById('board').innerHTML = '';
+  document.getElementById('final-box').style.display = 'block';
+  document.getElementById('final-title').textContent = '🏆 FINAL';
+  document.getElementById('final-content').innerHTML = `
+    <div style="color:var(--gold);font-size:1.1rem;margin-bottom:.75rem;">Kategoria: <strong>${msg.kategoria}</strong></div>
+    <div style="color:var(--muted);font-style:italic;margin-bottom:1rem;">Masz 10 sekund na obstawienie stawki!</div>
+    <div style="color:var(--text);font-size:.85rem;margin-bottom:.5rem;">Twoje konto: <strong style="color:var(--gold)">${msg.players.find(p=>p.id===myId)?.score||0} zł</strong></div>
+    <input type="number" id="bet-input" min="0" placeholder="Twoja stawka (0 - całe konto)" style="width:100%;background:var(--surface2);border:2px solid var(--gold);color:var(--text);font-size:1.2rem;padding:.6rem;text-align:center;outline:none;margin-bottom:.5rem;">
+    <button onclick="sendBet()" style="width:100%;padding:.75rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);border:none;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;cursor:pointer;">Obstaw!</button>
+    <div id="bet-timer" style="margin-top:.5rem;"></div>
+  `;
+  setStatus('🏆 FINAL! Obstaw stawkę!');
+  renderScoreboard(msg.players);
+
+  let left = 10;
+  const t = setInterval(() => {
+    left--;
+    const el = document.getElementById('bet-timer');
+    if(el) el.textContent = 'Pozostało: ' + left + 's';
+    if(left<=0) clearInterval(t);
+  }, 1000);
+}
+
+function sendBet(){
+  if(isOrganizer) return;
+  const val = parseInt(document.getElementById('bet-input')?.value) || 0;
+  ws.send(JSON.stringify({ type:'FINAL_BET', bet:val }));
+}
+
+function onFinalQuestion(msg){
+  gameState.phase = 'final_question';
+  document.getElementById('final-content').innerHTML = `
+    <div style="color:var(--muted);font-style:italic;margin-bottom:.75rem;">Pytanie finałowe — masz 12 sekund!</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:1rem;line-height:1.4;">${msg.haslo}</div>
+    <div class="timer-bar"><div class="timer-fill" id="final-timer-fill" style="width:100%"></div></div>
+    <input id="final-answer-input" placeholder="Twoja odpowiedź..." autocomplete="off"
+      style="width:100%;background:var(--surface2);border:2px solid var(--gold);color:var(--text);font-size:1.1rem;padding:.65rem;outline:none;margin-bottom:.5rem;margin-top:.5rem;"
+      onkeydown="if(event.key==='Enter')sendFinalAnswer()">
+    <button onclick="sendFinalAnswer()" style="width:100%;padding:.75rem;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border:none;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;cursor:pointer;">Wyślij odpowiedź</button>
+  `;
+  setStatus('🏆 FINAL — odpowiedz na pytanie!');
+  startTimer(12, 'final-timer-fill');
+  renderScoreboard(msg.players);
+  setTimeout(() => {
+    const inp = document.getElementById('final-answer-input');
+    if(inp) inp.focus();
+  }, 100);
+}
+
+function sendFinalAnswer(){
+  if(isOrganizer) return;
+  const inp = document.getElementById('final-answer-input');
+  if(!inp) return;
+  ws.send(JSON.stringify({ type:'FINAL_ANSWER', answer:inp.value.trim() }));
+  inp.disabled = true;
+}
+
+function onFinalResult(msg){
+  stopTimer();
+  gameState.phase = 'finished';
+  document.getElementById('final-box').style.display = 'none';
+  document.getElementById('board').innerHTML = '';
+
+  const sorted = [...msg.results].sort((a,b) => b.score - a.score);
+  const medals = ['🥇','🥈','🥉'];
+
+  document.getElementById('scoreboard').innerHTML = `
+    <div style="width:100%">
+      <div style="text-align:center;font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--gold);margin-bottom:1rem;">🏆 KONIEC GRY!</div>
+      ${sorted.map((p,i) => `
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem;background:${i===0?'rgba(212,168,83,.1)':'var(--surface2)'};border:1px solid ${i===0?'var(--gold)':'var(--border)'};margin-bottom:.35rem;border-radius:1px;">
+          <span style="font-size:1.3rem">${medals[i]||'#'+(i+1)}</span>
+          <strong style="font-family:'Playfair Display',serif;flex:1">${p.name}</strong>
+          <span style="color:${p.correct?'var(--green2)':'var(--red2)'}">${p.answer||'—'}</span>
+          <strong style="color:var(--gold);min-width:70px;text-align:right">${p.score} zł</strong>
+        </div>
+      `).join('')}
+      <div style="text-align:center;margin-top:1rem;color:var(--muted);font-style:italic;font-size:.9rem;">
+        Prawidłowa odpowiedź: <strong style="color:var(--text)">${msg.correctAnswer}</strong>
+      </div>
+    </div>
+  `;
+  setStatus('Gra zakończona!');
+}
+
+function onNoBuzzReveal(msg){
+  stopTimer();
+  document.getElementById('buzz-btn').style.display = 'none';
+  document.getElementById('answer-box').style.display = 'none';
+  // Pokaz pytanie z odpowiedzia przez 5 sekund
+  document.getElementById('question-box').style.display = 'block';
+  document.getElementById('q-wartosc').textContent = 'Nikt się nie zgłosił!';
+  document.getElementById('q-haslo').textContent = msg.haslo;
+  document.getElementById('q-buzzer-info').innerHTML =
+    '<span style="color:var(--green2);font-size:1.1rem">✅ Prawidłowa odpowiedź: <strong>' + msg.correctAnswer + '</strong></span>';
+  setStatus('Nikt się nie zgłosił — pokazuję odpowiedź przez 5 sekund...');
+  renderScoreboard(msg.players);
+}
+
+function onHostRoleUpdate(msg){
+  gameState.hostRole = msg.role;
+  if(msg.role === 'organizer') {
+    document.getElementById('organizer-panel').style.display = 'block';
+    notify('Tryb Organizatora aktywny!', 2000);
+  } else {
+    document.getElementById('organizer-panel').style.display = 'none';
+  }
+}
+
+function onOrganizerBoard(msg){
+  const panel = document.getElementById('org-board-content');
+  if(!panel) return;
+
+  let html = '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Kliknij pytanie aby ustawić Va Banque (runda 1) lub pytanie finałowe</div>';
+
+  ['Runda 1','Runda 2'].forEach((rundaNazwa, ri) => {
+    const kategorie = ri === 0 ? msg.round0 : msg.round1;
+    html += '<div style="font-family:Playfair Display,serif;font-weight:700;color:var(--gold);margin:.75rem 0 .3rem">' + rundaNazwa + '</div>';
+    kategorie.forEach((kat, ki) => {
+      html += '<div style="margin-bottom:.4rem"><span style="color:var(--muted);font-size:.75rem">' + kat.nazwa + '</span><div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.2rem">';
+      kat.pytania.forEach((p, pi) => {
+        const isVb = p.vabanque;
+        html += '<button onclick="setVabanque(' + ri + ',' + ki + ',' + pi + ')" style="padding:.3rem .6rem;font-size:.75rem;background:' +
+          (isVb ? 'rgba(192,57,43,.3)' : 'var(--surface2)') +
+          ';border:1px solid ' + (isVb ? 'var(--red2)' : 'var(--border)') +
+          ';color:var(--text);cursor:pointer;border-radius:1px;" title="' + p.haslo + '">' +
+          p.wartosc + (isVb ? ' 🎰' : '') + '</button>';
+      });
+      html += '</div></div>';
+    });
+  });
+
+  html += '<div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem">' +
+    '<div style="font-family:Playfair Display,serif;color:var(--gold);margin-bottom:.5rem">Pytanie finałowe</div>' +
+    '<input id="org-final-kat" placeholder="Kategoria finału" style="width:100%;margin-bottom:.3rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem;font-size:.85rem;">' +
+    '<input id="org-final-haslo" placeholder="Treść pytania/hasła..." style="width:100%;margin-bottom:.3rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem;font-size:.85rem;">' +
+    '<input id="org-final-odp" placeholder="Prawidłowa odpowiedź..." style="width:100%;margin-bottom:.5rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem;font-size:.85rem;">' +
+    '<button onclick="setFinalQuestion()" style="width:100%;padding:.5rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);border:none;font-family:Playfair Display,serif;font-weight:700;cursor:pointer;">Ustaw pytanie finałowe</button>' +
+    '</div>';
+
+  panel.innerHTML = html;
+}
+
+function setVabanque(round, ki, pi){
+  ws.send(JSON.stringify({ type:'ORGANIZER_SET_VABANQUE', round, kategoriaIdx:ki, pytanieIdx:pi }));
+  ws.send(JSON.stringify({ type:'ORGANIZER_BOARD_REQUEST' }));
+}
+
+function requestOrgBoard(){
+  ws.send(JSON.stringify({ type:'ORGANIZER_BOARD_REQUEST' }));
+}
+
+function requestOrgBoard(){
+  ws.send(JSON.stringify({ type:'ORGANIZER_BOARD_REQUEST' }));
+}
+
+function setFinalQuestion(){
+  const kat = document.getElementById('org-final-kat')?.value.trim();
+  const haslo = document.getElementById('org-final-haslo')?.value.trim();
+  const odp = document.getElementById('org-final-odp')?.value.trim();
+  if(!haslo || !odp){ notify('Wypełnij hasło i odpowiedź!'); return; }
+  ws.send(JSON.stringify({ type:'ORGANIZER_SET_FINAL', kategoria:kat, haslo, odpowiedz:odp }));
+}
+
+function onNoBuzzReveal(msg){
+  stopTimer();
+  document.getElementById('buzz-btn').style.display = 'none';
+  document.getElementById('answer-box').style.display = 'none';
+  // Pokaz pytanie z odpowiedzia przez 5 sekund
+  document.getElementById('question-box').style.display = 'block';
+  document.getElementById('q-wartosc').textContent = 'Nikt się nie zgłosił!';
+  document.getElementById('q-haslo').textContent = msg.haslo;
+  document.getElementById('q-buzzer-info').innerHTML =
+    '<span style="color:var(--green2);font-size:1.1rem">✅ Prawidłowa odpowiedź: <strong>' + msg.correctAnswer + '</strong></span>';
+  setStatus('Nikt się nie zgłosił — pokazuję odpowiedź przez 5 sekund...');
+  renderScoreboard(msg.players);
+}
+
+function onHostRoleUpdate(msg){
+  gameState.hostRole = msg.role;
+  if(msg.role === 'organizer') {
+    document.getElementById('organizer-panel').style.display = 'block';
+    notify('Tryb Organizatora aktywny!', 2000);
+  } else {
+    document.getElementById('organizer-panel').style.display = 'none';
+  }
+}
+
+function onOrganizerBoard(msg){
+  const panel = document.getElementById('org-board-content');
+  if(!panel) return;
+
+  let html = '<div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Kliknij pytanie aby ustawić Va Banque (runda 1) lub pytanie finałowe</div>';
+
+  ['Runda 1','Runda 2'].forEach((rundaNazwa, ri) => {
+    const kategorie = ri === 0 ? msg.round0 : msg.round1;
+    html += '<div style="font-family:Playfair Display,serif;font-weight:700;color:var(--gold);margin:.75rem 0 .3rem">' + rundaNazwa + '</div>';
+    kategorie.forEach((kat, ki) => {
+      html += '<div style="margin-bottom:.4rem"><span style="color:var(--muted);font-size:.75rem">' + kat.nazwa + '</span><div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.2rem">';
+      kat.pytania.forEach((p, pi) => {
+        const isVb = p.vabanque;
+        html += '<button onclick="setVabanque(' + ri + ',' + ki + ',' + pi + ')" style="padding:.3rem .6rem;font-size:.75rem;background:' +
+          (isVb ? 'rgba(192,57,43,.3)' : 'var(--surface2)') +
+          ';border:1px solid ' + (isVb ? 'var(--red2)' : 'var(--border)') +
+          ';color:var(--text);cursor:pointer;border-radius:1px;" title="' + p.haslo + '">' +
+          p.wartosc + (isVb ? ' 🎰' : '') + '</button>';
+      });
+      html += '</div></div>';
+    });
+  });
+
+  html += '<div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem">' +
+    '<div style="font-family:Playfair Display,serif;color:var(--gold);margin-bottom:.5rem">Pytanie finałowe</div>' +
+    '<input id="org-final-kat" placeholder="Kategoria finału" style="width:100%;margin-bottom:.3rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem;font-size:.85rem;">' +
+    '<input id="org-final-haslo" placeholder="Treść pytania/hasła..." style="width:100%;margin-bottom:.3rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem;font-size:.85rem;">' +
+    '<input id="org-final-odp" placeholder="Prawidłowa odpowiedź..." style="width:100%;margin-bottom:.5rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem;font-size:.85rem;">' +
+    '<button onclick="setFinalQuestion()" style="width:100%;padding:.5rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg);border:none;font-family:Playfair Display,serif;font-weight:700;cursor:pointer;">Ustaw pytanie finałowe</button>' +
+    '</div>';
+
+  panel.innerHTML = html;
+}
+
+function setVabanque(round, ki, pi){
+  ws.send(JSON.stringify({ type:'ORGANIZER_SET_VABANQUE', round, kategoriaIdx:ki, pytanieIdx:pi }));
+  ws.send(JSON.stringify({ type:'ORGANIZER_BOARD_REQUEST' }));
+}
+
+function requestOrgBoard(){
+  ws.send(JSON.stringify({ type:'ORGANIZER_BOARD_REQUEST' }));
+}
+
+function setFinalQuestion(){
+  const kat = document.getElementById('org-final-kat')?.value.trim();
+  const haslo = document.getElementById('org-final-haslo')?.value.trim();
+  const odp = document.getElementById('org-final-odp')?.value.trim();
+  if(!haslo || !odp){ notify('Wypełnij hasło i odpowiedź!'); return; }
+  ws.send(JSON.stringify({ type:'ORGANIZER_SET_FINAL', kategoria:kat, haslo, odpowiedz:odp }));
+}
+
+function onVbInProgress(msg){
+  // Pozostali gracze widza ze ktos odpowiada na Va Banque
+  gameState.phase = 'answering';
+  document.getElementById('question-box').style.display = 'block';
+  document.getElementById('q-wartosc').textContent = '🎰 VA BANQUE — ' + msg.wartosc + ' zł';
+  document.getElementById('q-haslo').textContent = msg.playerName + ' odpowiada na pytanie VA BANQUE...';
+  document.getElementById('q-buzzer-info').textContent = 'Tylko ' + msg.playerName + ' zna pytanie!';
+  document.getElementById('buzz-btn').style.display = 'none';
+  document.getElementById('answer-box').style.display = 'none';
+  startTimer(12, 'timer-fill');
+  setStatus('🎰 ' + msg.playerName + ' gra VA BANQUE na ' + msg.wartosc + ' zł!');
+  renderScoreboard(msg.players);
+  renderBoard(msg.board, false);
+}
+
+// ── INIT ────────────────────────────
+// Pobierz dane z sessionStorage z index.html
+const stored = JSON.parse(sessionStorage.getItem('vb') || '{}');
+if(!stored.myId){ location.href='index.html'; }
+
+const socket_myId = stored.myId;
+if(isOrganizer) document.getElementById('org-banner').style.display='block';
+const socket_room = stored.myRoom;
+
+function wsUrl2(){ return (location.protocol==='https:'?'wss:':'ws:')+'//'+location.host; }
+
+ws = new WebSocket(wsUrl2());
+ws.onopen = () => {
+  ws.send(JSON.stringify({ type:'REJOIN', roomCode:socket_room, playerId:socket_myId }));
+};
+ws.onmessage = e => handle(JSON.parse(e.data));
+ws.onerror = () => setStatus('Błąd połączenia!');
+ws.onclose = () => setStatus('Rozłączono. Odśwież stronę.');
+</script>
+</body>
+</html>

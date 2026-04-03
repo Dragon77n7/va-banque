@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Va Banque</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0208;--surface:#140d10;--surface2:#1e141a;--border:#3a2030;--gold:#d4a853;--gold2:#f0c060;--red:#c0392b;--red2:#e74c3c;--green:#27ae60;--green2:#2ecc71;--text:#f0e8d8;--muted:#8a7060;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Crimson Text',Georgia,serif;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1rem 4rem;
+    background-image:radial-gradient(ellipse 60% 50% at 30% 70%,rgba(192,57,43,.1) 0%,transparent 60%),radial-gradient(ellipse 40% 60% at 70% 20%,rgba(212,168,83,.08) 0%,transparent 60%);}
+  .wrap{width:100%;max-width:520px;}
+  header{text-align:center;margin-bottom:1.5rem;}
+  .eyebrow{font-style:italic;color:var(--muted);font-size:.85rem;letter-spacing:.3em;text-transform:uppercase;margin-bottom:.4rem;}
+  h1{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(2.5rem,10vw,4.5rem);line-height:.9;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 40%,var(--red2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .sub{font-style:italic;color:var(--muted);margin-top:.4rem;font-size:.95rem;}
+  .card{background:var(--surface);border:1px solid var(--border);padding:1.4rem;margin-bottom:.75rem;}
+  label{display:block;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;}
+  input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Crimson Text',serif;font-size:1rem;padding:.6rem .85rem;outline:none;transition:border-color .2s;margin-bottom:.7rem;}
+  input:focus{border-color:var(--gold);}
+  input::placeholder{color:var(--muted);}
+  .btn{width:100%;padding:.75rem;border:none;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;}
+  .btn-red{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;}
+  .btn-red:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px);}
+  .btn-red:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-gold{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+  .btn-gold:hover{background:rgba(212,168,83,.1);}
+  .err{color:var(--red2);font-style:italic;font-size:.85rem;text-align:center;margin-top:.4rem;min-height:1.1rem;}
+  #lobby{display:none;}
+  .code-box{text-align:center;background:var(--surface2);border:1px solid var(--border);padding:.9rem;margin-bottom:.9rem;}
+  .code-label{font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);}
+  .code-val{font-family:'Playfair Display',serif;font-size:2.3rem;font-weight:900;color:var(--gold);letter-spacing:.3em;}
+  .plist{list-style:none;margin-bottom:.9rem;}
+  .plist li{display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.95rem;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+  .badge{margin-left:auto;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--red2);background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);padding:.1rem .3rem;}
+  .wait{text-align:center;font-style:italic;color:var(--muted);font-size:.9rem;margin-top:.7rem;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .role-btns{display:flex;gap:.5rem;margin-bottom:.6rem;}
+  .role-btn{flex:1;padding:.6rem;border:2px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'Playfair Display',serif;font-weight:700;cursor:pointer;font-size:.85rem;transition:all .2s;}
+  .role-btn.active-p{border-color:var(--gold);background:rgba(212,168,83,.1);color:var(--gold);}
+  .role-btn.active-o{border-color:var(--red2);background:rgba(192,57,43,.1);color:var(--red2);}
+  .acc{margin-bottom:.6rem;border:1px solid var(--border);}
+  .acc-h{display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;background:var(--surface2);cursor:pointer;user-select:none;}
+  .acc-h:hover{background:rgba(212,168,83,.05);}
+  .acc-t{font-family:'Playfair Display',serif;font-weight:700;font-size:.9rem;}
+  .acc-t.gold{color:var(--gold);}
+  .acc-t.red{color:var(--red2);}
+  .acc-arrow{color:var(--muted);transition:transform .2s;font-size:.75rem;}
+  .acc-arrow.open{transform:rotate(180deg);}
+  .acc-b{display:none;padding:1rem;background:var(--surface);}
+  .acc-b.open{display:block;}
+  .status-badge{display:inline-block;padding:.25rem .65rem;font-size:.72rem;font-family:'Playfair Display',serif;font-weight:700;margin-bottom:.6rem;}
+  .status-ok{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);color:var(--green2);}
+  .status-no{background:rgba(138,112,96,.1);border:1px solid var(--border);color:var(--muted);}
+
+  /* Selektor kategorii */
+  .kat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.75rem;}
+  .kat-btn{padding:.5rem .4rem;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-family:'Crimson Text',serif;font-size:.85rem;text-align:left;transition:all .15s;line-height:1.2;}
+  .kat-btn:hover{border-color:var(--gold);color:var(--gold);}
+  .kat-btn.selected{border-color:var(--gold);background:rgba(212,168,83,.12);color:var(--gold);}
+  .kat-btn.selected-r2{border-color:var(--red2);background:rgba(192,57,43,.1);color:var(--red2);}
+  .kat-btn.disabled{opacity:.35;cursor:not-allowed;}
+  .kat-count{font-size:.7rem;letter-spacing:.05em;color:var(--muted);margin-bottom:.4rem;}
+
+  /* Selektor pytań */
+  .pyt-list{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem;}
+  .pyt-item{padding:.5rem .75rem;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .15s;}
+  .pyt-item:hover{border-color:var(--gold);}
+  .pyt-item.selected{border-color:var(--red2);background:rgba(192,57,43,.1);}
+  .pyt-wartosc{font-family:'Playfair Display',serif;font-weight:700;color:var(--gold);font-size:.8rem;}
+  .pyt-haslo{font-size:.85rem;color:var(--text);margin-top:.15rem;}
+  .pyt-odp{font-size:.75rem;color:var(--muted);font-style:italic;margin-top:.1rem;}
+
+  /* Pytanie finalne */
+  .final-pyt-list{display:flex;flex-direction:column;gap:.3rem;max-height:300px;overflow-y:auto;}
+  .final-item{padding:.5rem .75rem;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .15s;}
+  .final-item:hover{border-color:var(--gold);}
+  .final-item.selected{border-color:var(--gold);background:rgba(212,168,83,.1);}
+  .final-kat{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .final-haslo{font-size:.88rem;color:var(--text);margin-top:.15rem;}
+  .final-odp{font-size:.75rem;color:var(--green2);font-style:italic;margin-top:.1rem;}
+
+  select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Crimson Text',serif;font-size:.95rem;padding:.55rem .8rem;outline:none;margin-bottom:.6rem;}
+  select:focus{border-color:var(--gold);}
+  select option{background:var(--surface2);color:var(--text);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- MENU -->
+  <div id="menu">
+    <header>
+      <div class="eyebrow">teleturniej</div>
+      <h1>Va Banque</h1>
+      <div class="sub">Pytanie to odpowiedź — odpowiedź to pytanie</div>
+    </header>
+    <div class="card">
+      <label>Twoje imię</label>
+      <input id="iname" placeholder="Jak masz na imię?" maxlength="20">
+      <label>Kod pokoju (jeśli dołączasz)</label>
+      <input id="icode" placeholder="np. AB3XY" maxlength="5" style="text-transform:uppercase;letter-spacing:.25em">
+      <div style="display:flex;gap:.75rem;">
+        <button class="btn btn-red" onclick="createRoom()">Stwórz pokój</button>
+        <button class="btn btn-gold" onclick="joinRoom()">Dołącz</button>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="lobby">
+    <header style="margin-bottom:1rem;">
+      <div class="eyebrow">poczekaj na graczy</div>
+      <h1 style="font-size:2.2rem">Lobby</h1>
+    </header>
+
+    <div class="code-box">
+      <div class="code-label">Kod pokoju</div>
+      <div class="code-val" id="dcode">—</div>
+    </div>
+
+    <div class="card">
+      <label>Gracze</label>
+      <ul class="plist" id="plist"></ul>
+
+      <!-- SEKCJA HOSTA -->
+      <div id="hbtn" style="display:none">
+        <label>Twoja rola</label>
+        <div class="role-btns">
+          <button class="role-btn active-p" id="rb-player" onclick="setRole('player')">🎮 Gracz</button>
+          <button class="role-btn" id="rb-org" onclick="setRole('organizer')">🎭 Organizator</button>
+        </div>
+        <div id="role-desc" style="font-size:.78rem;font-style:italic;color:var(--muted);margin-bottom:.75rem;">
+          Gracz — bierzesz udział w grze, kategorie i Va Banque są losowane automatycznie
+        </div>
+
+        <!-- PANELE ORGANIZATORA -->
+        <div id="org-panels" style="display:none">
+
+          <!-- Panel 1: Kategorie Rundy 1 -->
+          <div class="acc">
+            <div class="acc-h" onclick="toggleAcc('a1')">
+              <span class="acc-t gold">📋 Kategorie Rundy 1</span>
+              <span class="acc-arrow" id="ar-a1">▼</span>
+            </div>
+            <div class="acc-b" id="a1">
+              <div class="kat-count">Wybierz dokładnie 5 kategorii <span id="r1-count" style="color:var(--gold);font-weight:700">0</span>/5</div>
+              <div class="kat-grid" id="kat-grid-r1"></div>
+              <div id="r1-status" class="status-badge status-no">Nie ustawiono</div>
+            </div>
+          </div>
+
+          <!-- Panel 2: Va Banque Runda 1 -->
+          <div class="acc">
+            <div class="acc-h" onclick="toggleAcc('a2')">
+              <span class="acc-t red">🎰 Va Banque — Runda 1</span>
+              <span class="acc-arrow" id="ar-a2">▼</span>
+            </div>
+            <div class="acc-b" id="a2">
+              <div id="vb1-info" style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;">Najpierw wybierz kategorie Rundy 1</div>
+              <div id="vb1-kat-select" style="display:none">
+                <label>Kategoria</label>
+                <select id="vb1-kat" onchange="renderVbPytania(0)"><option value="">— wybierz —</option></select>
+                <div class="pyt-list" id="vb1-pytania"></div>
+              </div>
+              <div id="vb1-status" class="status-badge status-no">Nie ustawiono</div>
+            </div>
+          </div>
+
+          <!-- Panel 3: Kategorie Rundy 2 -->
+          <div class="acc">
+            <div class="acc-h" onclick="toggleAcc('a3')">
+              <span class="acc-t gold">📋 Kategorie Rundy 2</span>
+              <span class="acc-arrow" id="ar-a3">▼</span>
+            </div>
+            <div class="acc-b" id="a3">
+              <div class="kat-count">Wybierz dokładnie 5 kategorii <span id="r2-count" style="color:var(--gold);font-weight:700">0</span>/5</div>
+              <div class="kat-grid" id="kat-grid-r2"></div>
+              <div id="r2-status" class="status-badge status-no">Nie ustawiono</div>
+            </div>
+          </div>
+
+          <!-- Panel 4: Va Banque Runda 2 -->
+          <div class="acc">
+            <div class="acc-h" onclick="toggleAcc('a4')">
+              <span class="acc-t red">🎰 Va Banque — Runda 2 (2 karty)</span>
+              <span class="acc-arrow" id="ar-a4">▼</span>
+            </div>
+            <div class="acc-b" id="a4">
+              <div id="vb2-info" style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;">Najpierw wybierz kategorie Rundy 2</div>
+              <div id="vb2-slots" style="display:none">
+                <div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;">Va Banque 1 z 2:</div>
+                <select id="vb2-kat1" onchange="renderVbPytania2(0)"><option value="">— kategoria —</option></select>
+                <div class="pyt-list" id="vb2-pyt1"></div>
+                <div style="font-size:.78rem;color:var(--muted);margin:.5rem 0;">Va Banque 2 z 2:</div>
+                <select id="vb2-kat2" onchange="renderVbPytania2(1)"><option value="">— kategoria —</option></select>
+                <div class="pyt-list" id="vb2-pyt2"></div>
+              </div>
+              <div id="vb2-status" class="status-badge status-no">Nie ustawiono (0/2)</div>
+            </div>
+          </div>
+
+          <!-- Panel 5: Pytanie finałowe -->
+          <div class="acc">
+            <div class="acc-h" onclick="toggleAcc('a5')">
+              <span class="acc-t gold">🏆 Pytanie finałowe</span>
+              <span class="acc-arrow" id="ar-a5">▼</span>
+            </div>
+            <div class="acc-b" id="a5">
+              <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem;">Wybierz pytanie finałowe z listy:</div>
+              <div class="final-pyt-list" id="final-list"></div>
+              <div id="final-status" class="status-badge status-no" style="margin-top:.5rem">Nie wybrano — zostanie wylosowane</div>
+            </div>
+          </div>
+
+        </div>
+
+        <button class="btn btn-red" onclick="startGame()" id="start-btn" style="margin-top:.5rem">Rozpocznij grę</button>
+      </div>
+
+      <div class="wait" id="gwait" style="display:none">Czekanie na hosta…</div>
+      <div class="err" id="lerr"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ws, myId, myRoom, isHost=false, hostRole='player';
+let allData = null; // pełne dane z serwera
+let selR1 = new Set(); // wybrane kategorie rundy 1 (nazwy)
+let selR2 = new Set(); // wybrane kategorie rundy 2 (nazwy)
+let vb1 = null; // {katNazwa, pytanieIdx}
+let vb2 = [null, null]; // [{katNazwa, pytanieIdx}, ...]
+let finalPytIdx = null;
+
+function wsUrl(){ return (location.protocol==='https:'?'wss:':'ws:')+'//'+location.host; }
+
+function connect(cb){
+  ws = new WebSocket(wsUrl());
+  ws.onopen = cb;
+  ws.onmessage = e => handle(JSON.parse(e.data));
+  ws.onerror = () => err('Błąd połączenia');
+}
+
+function handle(msg){
+  if(msg.type==='ROOM_CREATED'){
+    myId=msg.playerId; myRoom=msg.roomCode; isHost=true; showLobby();
+  }
+  else if(msg.type==='ROOM_JOINED'){ myId=msg.playerId; myRoom=msg.roomCode; isHost=false; showLobby(); }
+  else if(msg.type==='LOBBY_UPDATE'){ renderPlayers(msg.players); }
+  else if(msg.type==='ERROR'){ err(msg.msg); }
+  else if(msg.type==='ALL_QUESTIONS_DATA'){
+    allData = msg;
+    renderKatGrids();
+    renderFinalList();
+  }
+  else if(msg.type==='ROUND_START'||msg.type==='GAME_STARTED'){
+    sessionStorage.setItem('vb', JSON.stringify({
+      myId, myRoom, isHost,
+      name: document.getElementById('iname').value.trim(),
+      isOrganizer: hostRole==='organizer'
+    }));
+    location.href='game.html';
+  }
+}
+
+function err(m){
+  document.getElementById('err').textContent=m;
+  document.getElementById('lerr').textContent=m;
+  setTimeout(()=>{ document.getElementById('err').textContent=''; document.getElementById('lerr').textContent=''; },3000);
+}
+
+function createRoom(){
+  const n=document.getElementById('iname').value.trim();
+  if(!n){err('Podaj imię');return;}
+  connect(()=>ws.send(JSON.stringify({type:'CREATE_ROOM',name:n})));
+}
+
+function joinRoom(){
+  const n=document.getElementById('iname').value.trim();
+  const c=document.getElementById('icode').value.trim().toUpperCase();
+  if(!n){err('Podaj imię');return;}
+  if(!c){err('Podaj kod');return;}
+  connect(()=>ws.send(JSON.stringify({type:'JOIN_ROOM',name:n,roomCode:c})));
+}
+
+function showLobby(){
+  document.getElementById('menu').style.display='none';
+  document.getElementById('lobby').style.display='block';
+  document.getElementById('dcode').textContent=myRoom;
+  document.getElementById('hbtn').style.display=isHost?'block':'none';
+  document.getElementById('gwait').style.display=isHost?'none':'block';
+  if(isHost) ws.send(JSON.stringify({type:'GET_ALL_QUESTIONS'}));
+}
+
+function renderPlayers(players){
+  document.getElementById('plist').innerHTML=players.map(p=>`
+    <li><span class="dot"></span>${p.name}${p.isHost?'<span class="badge">host</span>':''}</li>
+  `).join('');
+}
+
+function setRole(role){
+  hostRole=role;
+  ws.send(JSON.stringify({type:'SET_ROLE',role}));
+  const rp=document.getElementById('rb-player');
+  const ro=document.getElementById('rb-org');
+  const desc=document.getElementById('role-desc');
+  const panels=document.getElementById('org-panels');
+  if(role==='player'){
+    rp.className='role-btn active-p'; ro.className='role-btn';
+    desc.textContent='Gracz — bierzesz udział w grze, kategorie i Va Banque są losowane automatycznie';
+    panels.style.display='none';
+  } else {
+    ro.className='role-btn active-o'; rp.className='role-btn';
+    desc.textContent='Organizator — wybierasz kategorie, Va Banque i pytanie finałowe. Nie grasz.';
+    panels.style.display='block';
+    // Otworz pierwszy panel
+    const b=document.getElementById('a1');
+    const a=document.getElementById('ar-a1');
+    if(b&&!b.classList.contains('open')){ b.classList.add('open'); a.classList.add('open'); }
+  }
+}
+
+function toggleAcc(id){
+  const b=document.getElementById(id);
+  const a=document.getElementById('ar-'+id);
+  const open=b.classList.contains('open');
+  b.classList.toggle('open',!open);
+  a.classList.toggle('open',!open);
+}
+
+// ── KATEGORIE ────────────────────────────────────────
+function renderKatGrids(){
+  if(!allData) return;
+  renderKatGrid('kat-grid-r1', allData.r1Kategorie, 1);
+  renderKatGrid('kat-grid-r2', allData.r2Kategorie, 2);
+}
+
+function renderKatGrid(elId, kategorie, round){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  const sel = round===1 ? selR1 : selR2;
+  el.innerHTML = kategorie.map(k => {
+    const isSelected = sel.has(k.nazwa);
+    return `<button class="kat-btn ${isSelected?'selected':''}"
+      onclick="toggleKat(${round},'${k.nazwa.replace(/'/g,"\\'")}')">
+      ${k.nazwa}
+    </button>`;
+  }).join('');
+}
+
+function toggleKat(round, nazwa){
+  const sel = round===1 ? selR1 : selR2;
+  if(sel.has(nazwa)){
+    sel.delete(nazwa);
+    // Wyczysc Va Banque jesli ta kategoria byla wybrana
+    if(round===1 && vb1 && vb1.katNazwa===nazwa){ vb1=null; updateVb1Status(); }
+    if(round===2){
+      if(vb2[0] && vb2[0].katNazwa===nazwa){ vb2[0]=null; }
+      if(vb2[1] && vb2[1].katNazwa===nazwa){ vb2[1]=null; }
+      updateVb2Status();
+    }
+  } else {
+    if(sel.size >= 5){ err('Możesz wybrać maksymalnie 5 kategorii!'); return; }
+    sel.add(nazwa);
+  }
+  renderKatGrid(round===1?'kat-grid-r1':'kat-grid-r2', round===1?allData.r1Kategorie:allData.r2Kategorie, round);
+  document.getElementById('r'+round+'-count').textContent = sel.size;
+  const st=document.getElementById('r'+round+'-status');
+  if(sel.size===5){
+    st.className='status-badge status-ok'; st.textContent='✅ 5 kategorii wybranych';
+    if(round===1) updateVb1KatSelect();
+    if(round===2) updateVb2KatSelects();
+  } else {
+    st.className='status-badge status-no'; st.textContent=sel.size+'/5 kategorii';
+  }
+}
+
+// ── VA BANQUE 1 ───────────────────────────────────────
+function updateVb1KatSelect(){
+  const sel=document.getElementById('vb1-kat');
+  const info=document.getElementById('vb1-info');
+  const box=document.getElementById('vb1-kat-select');
+  if(selR1.size<5){ info.style.display=''; box.style.display='none'; return; }
+  info.style.display='none'; box.style.display='block';
+  sel.innerHTML='<option value="">— wybierz kategorię —</option>'+
+    [...selR1].map(n=>`<option value="${n}">${n}</option>`).join('');
+  sel.value='';
+  document.getElementById('vb1-pytania').innerHTML='';
+}
+
+function renderVbPytania(round){
+  const katNazwa = document.getElementById('vb1-kat').value;
+  const el = document.getElementById('vb1-pytania');
+  if(!katNazwa){ el.innerHTML=''; return; }
+  const kat = allData.r1Kategorie.find(k=>k.nazwa===katNazwa);
+  if(!kat){ el.innerHTML=''; return; }
+  // Tylko pytania za 400 i 500
+  const kandydaci = kat.pytania.filter(p=>p.wartosc>=400);
+  el.innerHTML = kandydaci.map(p=>{
+    const isSel = vb1 && vb1.katNazwa===katNazwa && vb1.pytanieIdx===p.idx;
+    return `<div class="pyt-item ${isSel?'selected':''}" onclick="selectVb1('${katNazwa.replace(/'/g,"\\'")}',${p.idx})">
+      <div class="pyt-wartosc">${p.wartosc} zł</div>
+      <div class="pyt-haslo">${p.haslo}</div>
+      <div class="pyt-odp">Odp: ${p.odpowiedz}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectVb1(katNazwa, pytIdx){
+  vb1 = {katNazwa, pytanieIdx: pytIdx};
+  renderVbPytania(0);
+  updateVb1Status();
+  ws.send(JSON.stringify({type:'ORGANIZER_SET_VB_BY_NAME', round:0, katNazwa, pytanieIdx:pytIdx}));
+}
+
+function updateVb1Status(){
+  const st=document.getElementById('vb1-status');
+  if(vb1){ st.className='status-badge status-ok'; st.textContent='✅ Va Banque ustawione'; }
+  else { st.className='status-badge status-no'; st.textContent='Nie ustawiono'; }
+}
+
+// ── VA BANQUE 2 ───────────────────────────────────────
+function updateVb2KatSelects(){
+  const slots=document.getElementById('vb2-slots');
+  const info=document.getElementById('vb2-info');
+  if(selR2.size<5){ info.style.display=''; slots.style.display='none'; return; }
+  info.style.display='none'; slots.style.display='block';
+  const opts='<option value="">— kategoria —</option>'+[...selR2].map(n=>`<option value="${n}">${n}</option>`).join('');
+  document.getElementById('vb2-kat1').innerHTML=opts;
+  document.getElementById('vb2-kat2').innerHTML=opts;
+  document.getElementById('vb2-pyt1').innerHTML='';
+  document.getElementById('vb2-pyt2').innerHTML='';
+}
+
+function renderVbPytania2(slot){
+  const katNazwa = document.getElementById('vb2-kat'+(slot+1)).value;
+  const el = document.getElementById('vb2-pyt'+(slot+1));
+  if(!katNazwa){ el.innerHTML=''; return; }
+  const kat = allData.r2Kategorie.find(k=>k.nazwa===katNazwa);
+  if(!kat){ el.innerHTML=''; return; }
+  const kandydaci = kat.pytania.filter(p=>p.wartosc>=800);
+  el.innerHTML = kandydaci.map(p=>{
+    const isSel = vb2[slot] && vb2[slot].katNazwa===katNazwa && vb2[slot].pytanieIdx===p.idx;
+    return `<div class="pyt-item ${isSel?'selected':''}" onclick="selectVb2(${slot},'${katNazwa.replace(/'/g,"\\'")}',${p.idx})">
+      <div class="pyt-wartosc">${p.wartosc} zł</div>
+      <div class="pyt-haslo">${p.haslo}</div>
+      <div class="pyt-odp">Odp: ${p.odpowiedz}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectVb2(slot, katNazwa, pytIdx){
+  vb2[slot] = {katNazwa, pytanieIdx: pytIdx};
+  renderVbPytania2(slot);
+  updateVb2Status();
+  ws.send(JSON.stringify({type:'ORGANIZER_SET_VB_BY_NAME', round:1, slot, katNazwa, pytanieIdx:pytIdx}));
+}
+
+function updateVb2Status(){
+  const count = vb2.filter(v=>v!==null).length;
+  const st=document.getElementById('vb2-status');
+  if(count>=2){ st.className='status-badge status-ok'; st.textContent='✅ 2x Va Banque ustawione'; }
+  else { st.className='status-badge status-no'; st.textContent='Nie ustawiono ('+count+'/2)'; }
+}
+
+// ── PYTANIE FINALNE ───────────────────────────────────
+function renderFinalList(){
+  if(!allData) return;
+  const el=document.getElementById('final-list');
+  el.innerHTML = allData.finalPytania.map((p,i)=>{
+    const isSel = finalPytIdx===i;
+    return `<div class="final-item ${isSel?'selected':''}" onclick="selectFinal(${i})">
+      <div class="final-kat">${p.kategoria}</div>
+      <div class="final-haslo">${p.haslo}</div>
+      <div class="final-odp">✓ ${p.odpowiedz}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectFinal(idx){
+  finalPytIdx=idx;
+  renderFinalList();
+  const p=allData.finalPytania[idx];
+  ws.send(JSON.stringify({type:'ORGANIZER_SET_FINAL', haslo:p.haslo, odpowiedz:p.odpowiedz, kategoria:p.kategoria}));
+  const st=document.getElementById('final-status');
+  st.className='status-badge status-ok';
+  st.textContent='✅ Wybrano: '+p.haslo.substring(0,40)+(p.haslo.length>40?'...':'');
+}
+
+// ── KATEGORIE → SERWER ───────────────────────────────
+function sendKategorieToServer(){
+  if(hostRole!=='organizer') return;
+  if(selR1.size===5){
+    ws.send(JSON.stringify({type:'ORGANIZER_SET_KATEGORIE', round:0, kategorie:[...selR1]}));
+  }
+  if(selR2.size===5){
+    ws.send(JSON.stringify({type:'ORGANIZER_SET_KATEGORIE', round:1, kategorie:[...selR2]}));
+  }
+}
+
+function startGame(){
+  if(hostRole==='organizer'){
+    if(selR1.size!==5){ err('Wybierz 5 kategorii dla Rundy 1!'); return; }
+    if(selR2.size!==5){ err('Wybierz 5 kategorii dla Rundy 2!'); return; }
+    sendKategorieToServer();
+  }
+  ws.send(JSON.stringify({type:'START_GAME'}));
+}
+</script>
+</body>
+</html>
